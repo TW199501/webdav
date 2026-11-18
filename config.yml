@@ -1,0 +1,12 @@
+# Minimal configuration used by compose.yml.
+# Credentials come from the WEBDAV_USERNAME / WEBDAV_PASSWORD environment
+# variables, so no secrets are committed here.
+address: 0.0.0.0
+port: 6065
+prefix: /
+directory: /data
+permissions: CRUD
+
+users:
+  - username: "{env}WEBDAV_USERNAME"
+    password: "{env}WEBDAV_PASSWORD"
