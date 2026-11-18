@@ -3,11 +3,19 @@ name: webdav
 services:
   app:
     container_name: webdav
-    image: 'webdav:test'
+    # Build the image from the Dockerfile in this repository, so stacks
+    # deployed straight from Git (e.g. Dockhand) don't need a prebuilt image.
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: 'webdav:local'
+    command: ['-c', '/config.yml']
     ports:
-     - '6065:6065'
-    security_opt:
-      - label=type:container_runtime_t
+      - '6065:6065'
+    environment:
+      # Set these in your stack's environment / .env file.
+      WEBDAV_USERNAME: ${WEBDAV_USERNAME:-admin}
+      WEBDAV_PASSWORD: ${WEBDAV_PASSWORD:?set WEBDAV_PASSWORD}
     restart: always
     volumes:
       - ./data:/data
