@@ -13,12 +13,14 @@ services:
     ports:
       - '6065:6065'
     environment:
-      # Defaults let the first deploy succeed before any variables exist.
-      # Change the password: set WEBDAV_PASSWORD in the stack's environment
-      # and redeploy.
+      # Optional. Without WEBDAV_PASSWORD, a random password is generated on
+      # the first start and printed to the container log.
       WEBDAV_USERNAME: ${WEBDAV_USERNAME:-admin}
-      WEBDAV_PASSWORD: ${WEBDAV_PASSWORD:-changeme}
+      WEBDAV_PASSWORD: ${WEBDAV_PASSWORD:-}
     restart: always
     volumes:
       - ./data:/data
+      # Holds the generated password. Kept outside ./data so it is not
+      # reachable over WebDAV.
+      - ./state:/state
       - ./config.yml:/config.yml:ro
