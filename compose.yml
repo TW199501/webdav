@@ -13,9 +13,11 @@ services:
     ports:
       - '6065:6065'
     environment:
-      # Set these in your stack's environment / .env file.
+      # Defaults let the first deploy succeed before any variables exist.
+      # Change the password: set WEBDAV_PASSWORD in the stack's environment
+      # and redeploy.
       WEBDAV_USERNAME: ${WEBDAV_USERNAME:-admin}
-      WEBDAV_PASSWORD: ${WEBDAV_PASSWORD:?set WEBDAV_PASSWORD}
+      WEBDAV_PASSWORD: ${WEBDAV_PASSWORD:-changeme}
     restart: always
     volumes:
       - ./data:/data
