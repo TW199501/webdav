@@ -1,12 +1,139 @@
-# Minimal configuration used by compose.yml.
-# Credentials come from the WEBDAV_USERNAME / WEBDAV_PASSWORD environment
-# variables, so no secrets are committed here.
+# =====================================================================
+# webdav 設定檔（compose.yml 會把它掛到容器的 /config.yml）
+#
+# 帳號密碼來自環境變數：
+#   WEBDAV_USERNAME  預設 admin
+#   WEBDAV_PASSWORD  沒設的話，第一次啟動會自動產生隨機密碼，
+#                    印在容器日誌裡，並存到 ./state/password。
+#
+# 標註「選用」的項目預設關閉，要用時把前面的 # 拿掉即可。
+# 頂層鍵用 camelCase，區塊內的鍵用 snake_case。
+# =====================================================================
+
+# ---------------------------------------------------------------------
+# 網路
+# ---------------------------------------------------------------------
+# 監聽位址與連接埠。容器內請保持 0.0.0.0，對外埠號在 compose.yml 調整。
 address: 0.0.0.0
 port: 6065
+
+# WebDAV 的路徑前綴，例如設成 /dav 時網址就是 http://主機:6065/dav/
 prefix: /
+
+# 選用：直接由 webdav 處理 HTTPS（通常交給反向代理處理即可）。
+# tls: true
+# cert: /certs/cert.pem
+# key: /certs/key.pem
+
+# 選用：HTTPS 時送出 HSTS 標頭，要求瀏覽器之後只用 HTTPS。
+# 只在上面 tls: true 時有效；放在反向代理後面請在代理設定。
+# hsts: true
+
+# 選用：放在 Nginx / Caddy / Nginx Proxy Manager 等反向代理後面時設為 true，
+# 日誌會記錄 X-Forwarded-For 裡的真實來源 IP。
+# behindProxy: true
+
+# ---------------------------------------------------------------------
+# 檔案與權限
+# ---------------------------------------------------------------------
+# 分享的根目錄（compose.yml 把主機的 ./data 掛到 /data）。
 directory: /data
+
+# 選用：改用多個目錄當成虛擬根目錄（與 directory 二選一）。
+# directories:
+#   - media: /data/media
+#   - name: backups
+#     path: /data/backups
+
+# 預設權限，可組合：C 建立、R 讀取、U 修改、D 刪除。
+# CRUD = 全部權限；R = 唯讀。
 permissions: CRUD
 
+# 選用：全域路徑規則。由最後一條往前比對，第一條符合的生效。
+# 路徑相對於使用者的目錄。
+# rules:
+#   - path: /private/
+#     permissions: none
+#   - regex: '^.+\.exe$'
+#     permissions: R
+
+# 使用者有自己的 rules 時：overwrite = 取代全域規則；append = 疊加在全域規則前面。
+rulesBehavior: overwrite
+
+# 不依檔案內容猜測檔案類型（只看副檔名），速度較快。
+noSniff: false
+
+# ---------------------------------------------------------------------
+# 日誌
+# ---------------------------------------------------------------------
+debug: false
+log:
+  # console 或 json
+  format: console
+  # Dockhand 等網頁介面看日誌時，關掉顏色比較好讀
+  colors: false
+  outputs:
+    - stderr
+
+# ---------------------------------------------------------------------
+# CORS：讓網頁版 WebDAV 客戶端可以跨網域連線
+# ---------------------------------------------------------------------
+cors:
+  enabled: true
+  credentials: true
+  # 建議改成你實際用的網頁客戶端網址，例如 https://files.example.com
+  allowed_hosts:
+    - '*'
+  allowed_headers:
+    - Authorization
+    - Content-Type
+    - Content-Range
+    - Depth
+    - Destination
+    - If
+    - Lock-Token
+    - Overwrite
+    - Timeout
+    - Translate
+    - X-Update-Range
+  allowed_methods:
+    - COPY
+    - DELETE
+    - GET
+    - HEAD
+    - LOCK
+    - UNLOCK
+    - MKCOL
+    - MOVE
+    - OPTIONS
+    - PATCH
+    - POST
+    - PROPFIND
+    - PROPPATCH
+    - PUT
+  exposed_headers: []
+
+# ---------------------------------------------------------------------
+# 瀏覽器檔案列表：用瀏覽器開網址時顯示檔案清單網頁，而不是 XML。
+# WebDAV 客戶端不受影響。
+# ---------------------------------------------------------------------
+listing:
+  enabled: true
+  # 隱藏「上一層 ../」連結
+  hide_parent_dir: false
+  # 顯示「Index of /路徑」標題
+  show_path: true
+
+# ---------------------------------------------------------------------
+# 使用者
+# ---------------------------------------------------------------------
 users:
   - username: "{env}WEBDAV_USERNAME"
     password: "{env}WEBDAV_PASSWORD"
+
+  # 選用：再加其他使用者。密碼可用明文、{bcrypt}雜湊或 {env}環境變數。
+  # 產生 bcrypt：docker exec webdav webdav bcrypt 你的密碼
+  # - username: guest
+  #   password: "{bcrypt}$2a$10$......"
+  #   directory: /data/guest   # 只能存取自己的資料夾
+  #   permissions: R           # 唯讀
